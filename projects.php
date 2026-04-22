@@ -1,7 +1,10 @@
 <?php
 include "config.php";
+include "includes/header.php";
 
-// ADD PROJECT
+/* =====================
+   ADD PROJECT
+===================== */
 if (isset($_POST['add_project'])) {
     $client_id = $_POST['client_id'];
     $title = $_POST['title'];
@@ -15,20 +18,26 @@ if (isset($_POST['add_project'])) {
     }
 }
 
-// DELETE PROJECT
+/* =====================
+   DELETE PROJECT
+===================== */
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
     $conn->query("DELETE FROM projects WHERE id='$id'");
 }
 
-// GET PROJECT DATA (EDIT)
+/* =====================
+   EDIT PROJECT
+===================== */
 $editData = null;
 if (isset($_GET['edit'])) {
     $id = $_GET['edit'];
     $editData = $conn->query("SELECT * FROM projects WHERE id='$id'")->fetch_assoc();
 }
 
-// UPDATE PROJECT
+/* =====================
+   UPDATE PROJECT
+===================== */
 if (isset($_POST['update_project'])) {
     $id = $_POST['id'];
     $client_id = $_POST['client_id'];
@@ -42,7 +51,9 @@ if (isset($_POST['update_project'])) {
         WHERE id='$id'");
 }
 
-// STATUS UPDATE
+/* =====================
+   STATUS UPDATE
+===================== */
 if (isset($_GET['status']) && isset($_GET['id'])) {
     $id = $_GET['id'];
     $status = $_GET['status'];
@@ -51,73 +62,120 @@ if (isset($_GET['status']) && isset($_GET['id'])) {
 }
 ?>
 
-<h2><?php echo $editData ? "Edit Project" : "Add Project"; ?></h2>
+<!-- MAIN CONTENT ONLY (NO SIDEBAR HERE) -->
+<div class="flex-1">
 
-<form method="POST" onsubmit="return validateForm()">
+    <!-- TITLE -->
+    <h2 class="text-2xl font-bold mb-4">
+        <?= $editData ? "Edit Project" : "Add Project" ?>
+    </h2>
 
-    <input type="hidden" name="id" value="<?php echo $editData['id'] ?? ''; ?>">
+    <!-- FORM -->
+    <div class="bg-white p-4 rounded shadow mb-6">
 
-    <select name="client_id" required>
-        <option value="">Select Client</option>
+        <form method="POST" class="space-y-2">
+
+            <input type="hidden" name="id" value="<?= $editData['id'] ?? '' ?>">
+
+            <!-- CLIENT SELECT -->
+            <select name="client_id" class="border p-2 w-full" required>
+                <option value="">Select Client</option>
+
+                <?php
+                $clients = $conn->query("SELECT * FROM clients");
+                while($c = $clients->fetch_assoc()) {
+                    $selected = ($editData && $editData['client_id'] == $c['id']) ? "selected" : "";
+                    echo "<option value='".$c['id']."' $selected>".$c['name']."</option>";
+                }
+                ?>
+            </select>
+
+            <input class="border p-2 w-full"
+                type="text"
+                name="title"
+                placeholder="Project Title"
+                value="<?= $editData['title'] ?? '' ?>">
+
+            <textarea class="border p-2 w-full"
+                name="description"
+                placeholder="Description"><?= $editData['description'] ?? '' ?></textarea>
+
+            <button class="bg-blue-500 text-white px-4 py-2 rounded"
+                name="<?= $editData ? 'update_project' : 'add_project' ?>">
+                <?= $editData ? 'Update' : 'Add' ?>
+            </button>
+
+        </form>
+
+    </div>
+
+    <!-- PROJECT LIST -->
+    <div class="bg-white p-4 rounded shadow">
+
+        <h2 class="text-xl font-bold mb-4">Project List</h2>
 
         <?php
-        $clients = $conn->query("SELECT * FROM clients");
-        while($c = $clients->fetch_assoc()) {
-            $selected = ($editData && $editData['client_id'] == $c['id']) ? "selected" : "";
-            echo "<option value='".$c['id']."' $selected>".$c['name']."</option>";
-        }
+        $result = $conn->query("
+            SELECT projects.*, clients.name AS client_name 
+            FROM projects 
+            JOIN clients ON projects.client_id = clients.id
+        ");
+
+        while($row = $result->fetch_assoc()) {
         ?>
-    </select>
 
-    <input type="text" name="title" placeholder="Project Title"
-        value="<?php echo $editData['title'] ?? ''; ?>" required>
+            <div class="border-b py-4 flex justify-between">
 
-    <textarea name="description"><?php echo $editData['description'] ?? ''; ?></textarea>
+                <!-- LEFT -->
+                <div>
+                    <p class="font-semibold"><?= $row['title'] ?></p>
+                    <p class="text-sm text-gray-500">
+                        Client: <?= $row['client_name'] ?>
+                    </p>
+                    <p class="text-sm text-gray-600">
+                        <?= $row['description'] ?>
+                    </p>
+                </div>
 
-    <button name="<?php echo $editData ? 'update_project' : 'add_project'; ?>">
-        <?php echo $editData ? 'Update' : 'Add'; ?>
-    </button>
-</form>
+                <!-- RIGHT -->
+                <div class="text-right">
 
-<hr>
+                    <!-- STATUS BADGE -->
+                    <span class="text-xs px-2 py-1 rounded
+                        <?= 
+                            $row['status'] == 'completed' ? 'bg-green-200' : 
+                            ($row['status'] == 'ongoing' ? 'bg-blue-200' : 'bg-yellow-200')
+                        ?>">
+                        <?= $row['status'] ?>
+                    </span>
 
-<h2>Project List</h2>
+                    <!-- ACTIONS -->
+                    <div class="space-x-2 mt-2">
+                        <a class="text-blue-500"
+                           href="?edit=<?= $row['id'] ?>">Edit</a>
 
-<?php
-$result = $conn->query("
-    SELECT projects.*, clients.name AS client_name 
-    FROM projects 
-    JOIN clients ON projects.client_id = clients.id
-");
+                        <a class="text-red-500"
+                           href="?delete=<?= $row['id'] ?>"
+                           onclick="return confirm('Delete project?')">
+                           Delete
+                        </a>
+                    </div>
 
-while($row = $result->fetch_assoc()) {
-    echo "<b>".$row['title']."</b> - ".$row['client_name'];
-    echo " | Status: ".$row['status']." ";
+                    <!-- STATUS CHANGE -->
+                    <div class="text-xs mt-2 space-x-1">
+                        <a href="?id=<?= $row['id'] ?>&status=pending">Pending</a> |
+                        <a href="?id=<?= $row['id'] ?>&status=ongoing">Ongoing</a> |
+                        <a href="?id=<?= $row['id'] ?>&status=completed">Done</a>
+                    </div>
 
-    echo "
-    <a href='?edit=".$row['id']."'>Edit</a> 
-    <a href='?delete=".$row['id']."' onclick='return confirm(\"Delete project?\")'>Delete</a>
-    ";
+                </div>
 
-    echo "<br>";
+            </div>
 
-    echo "
-    <a href='?id=".$row['id']."&status=pending'>Pending</a> |
-    <a href='?id=".$row['id']."&status=ongoing'>Ongoing</a> |
-    <a href='?id=".$row['id']."&status=completed'>Completed</a>
-    ";
+        <?php } ?>
 
-    echo "<br><br>";
-}
-?>
+    </div>
 
-<script>
-function validateForm() {
-    let title = document.querySelector('[name="title"]').value;
+</div>
 
-    if (title === "") {
-        alert("Project title is required!");
-        return false;
-    }
-}
-</script>
+<?php include "includes/footer.php"; ?>
