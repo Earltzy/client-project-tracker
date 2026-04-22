@@ -1,7 +1,10 @@
 <?php
 include "config.php";
+include "includes/header.php";
 
-// ADD CLIENT
+/* =====================
+   ADD CLIENT
+===================== */
 if (isset($_POST['add'])) {
     $name = $_POST['name'];
     $email = $_POST['email'];
@@ -15,20 +18,26 @@ if (isset($_POST['add'])) {
     }
 }
 
-// DELETE CLIENT
+/* =====================
+   DELETE CLIENT
+===================== */
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
     $conn->query("DELETE FROM clients WHERE id='$id'");
 }
 
-// GET CLIENT DATA FOR EDIT
+/* =====================
+   EDIT CLIENT
+===================== */
 $editData = null;
 if (isset($_GET['edit'])) {
     $id = $_GET['edit'];
     $editData = $conn->query("SELECT * FROM clients WHERE id='$id'")->fetch_assoc();
 }
 
-// UPDATE CLIENT
+/* =====================
+   UPDATE CLIENT
+===================== */
 if (isset($_POST['update'])) {
     $id = $_POST['id'];
     $name = $_POST['name'];
@@ -43,43 +52,83 @@ if (isset($_POST['update'])) {
 }
 ?>
 
-<h2><?php echo $editData ? "Edit Client" : "Add Client"; ?></h2>
+<!-- MAIN CONTENT ONLY (NO SIDEBAR HERE) -->
+<div class="flex-1">
 
-<form method="POST" onsubmit="return validateForm()">
-    <input type="hidden" name="id" value="<?php echo $editData['id'] ?? ''; ?>">
+    <h2 class="text-2xl font-bold mb-4">
+        <?= $editData ? "Edit Client" : "Add Client" ?>
+    </h2>
 
-    <input type="text" name="name" placeholder="Client Name"
-        value="<?php echo $editData['name'] ?? ''; ?>" required>
+    <!-- FORM -->
+    <div class="bg-white p-4 rounded shadow mb-6">
 
-    <input type="email" name="email" placeholder="Email"
-        value="<?php echo $editData['email'] ?? ''; ?>">
+        <form method="POST" onsubmit="return validateForm()" class="space-y-2">
 
-    <input type="text" name="phone" placeholder="Phone"
-        value="<?php echo $editData['phone'] ?? ''; ?>">
+            <input type="hidden" name="id" value="<?= $editData['id'] ?? '' ?>">
 
-    <button name="<?php echo $editData ? 'update' : 'add'; ?>">
-        <?php echo $editData ? 'Update' : 'Add'; ?>
-    </button>
-</form>
+            <input class="border p-2 w-full"
+                type="text"
+                name="name"
+                placeholder="Client Name"
+                value="<?= $editData['name'] ?? '' ?>">
 
-<hr>
+            <input class="border p-2 w-full"
+                type="email"
+                name="email"
+                placeholder="Email"
+                value="<?= $editData['email'] ?? '' ?>">
 
-<h2>Client List</h2>
+            <input class="border p-2 w-full"
+                type="text"
+                name="phone"
+                placeholder="Phone"
+                value="<?= $editData['phone'] ?? '' ?>">
 
-<?php
-$result = $conn->query("SELECT * FROM clients");
+            <button class="bg-blue-500 text-white px-4 py-2 rounded"
+                name="<?= $editData ? 'update' : 'add' ?>">
+                <?= $editData ? 'Update' : 'Add' ?>
+            </button>
 
-while($row = $result->fetch_assoc()) {
-    echo "<b>".$row['name']."</b> - ".$row['email'];
+        </form>
 
-    echo " 
-    <a href='?edit=".$row['id']."'>Edit</a> 
-    <a href='?delete=".$row['id']."' onclick='return confirm(\"Delete this client?\")'>Delete</a>
-    ";
+    </div>
 
-    echo "<br><br>";
-}
-?>
+    <!-- LIST -->
+    <div class="bg-white p-4 rounded shadow">
+
+        <h2 class="text-xl font-bold mb-4">Client List</h2>
+
+        <?php
+        $result = $conn->query("SELECT * FROM clients");
+
+        while($row = $result->fetch_assoc()) {
+        ?>
+            <div class="flex justify-between border-b py-3">
+
+                <div>
+                    <p class="font-semibold"><?= $row['name'] ?></p>
+                    <p class="text-sm text-gray-500">
+                        <?= $row['email'] ?> | <?= $row['phone'] ?>
+                    </p>
+                </div>
+
+                <div class="space-x-2">
+                    <a class="text-blue-500"
+                       href="?edit=<?= $row['id'] ?>">Edit</a>
+
+                    <a class="text-red-500"
+                       href="?delete=<?= $row['id'] ?>"
+                       onclick="return confirm('Delete this client?')">
+                       Delete
+                    </a>
+                </div>
+
+            </div>
+        <?php } ?>
+
+    </div>
+
+</div>
 
 <script>
 function validateForm() {
@@ -91,3 +140,5 @@ function validateForm() {
     }
 }
 </script>
+
+<?php include "includes/footer.php"; ?>

@@ -1,6 +1,8 @@
 <?php
 session_start();
 include "config.php";
+include "includes/header.php";
+
 
 if (!isset($_SESSION['user'])) {
     header("Location: login.php");
@@ -49,3 +51,5 @@ $completed = $conn->query("SELECT COUNT(*) as total FROM projects WHERE status='
 
 <a href="clients.php">Manage Clients</a> |
 <a href="projects.php">Manage Projects</a>
+
+<?php include "includes/footer.php"; ?>
